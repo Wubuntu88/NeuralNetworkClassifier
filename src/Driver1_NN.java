@@ -13,6 +13,21 @@ public class Driver1_NN {
 		}
 		
 		nnc.printRecords();
+		int numberOfHiddenNodes = 3;
+		int seed = 123456;
+		int iterations = 1000;
+		double learningRate = 0.01;
+		nnc.setParameters(numberOfHiddenNodes, seed, iterations, learningRate);
+		
+		nnc.train();
+		//nnc.initializeNetwork();
+		
+		nnc.letsPrintTheClassifiedRecords();
+		
+		nnc.printInputToHiddenWeigths();
+		nnc.printOutputWeights();
+		nnc.printInputToMiddleThetas();
+		nnc.printOutputThetas();
 	}
 }
 
