@@ -5,11 +5,11 @@ public class Record {
 	public double[] getAttrList() {
 		return attrList;
 	}
-	private int label;
-	public int getLabel() {
+	private double label;
+	public double getLabel() {
 			return label;
 	}
-	public Record(double[] attrList, int label) {
+	public Record(double[] attrList, double label) {
 		this.attrList = attrList;
 		this.label = label;
 	}
