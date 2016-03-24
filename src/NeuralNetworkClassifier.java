@@ -7,7 +7,6 @@ import java.util.TreeSet;
 public class NeuralNetworkClassifier {
 
 	// list of the type of the variables in records (ordinal, continuous, etc)
-	//private ArrayList<String> headerList;
 	private ArrayList<Record> records;
 	private TreeSet<Double> crypticLabels = new TreeSet<>();
 	
@@ -42,7 +41,6 @@ public class NeuralNetworkClassifier {
 					crypticLabels.add(record.getLabel());
 				}
 			}
-			System.out.println("number of cryptic labels: " + crypticLabels.size());
 		}else{
 			System.out.println("cannot build a neural net with zero records.");
 		}
@@ -201,19 +199,17 @@ public class NeuralNetworkClassifier {
 		return this.output;
 	}
 	
+	public ArrayList<Double> classificationsOfTrainingRecords(){
+		ArrayList<Double> clArrayList = classifyRecords(this.records);
+		return clArrayList;
+	}
+	
 	public double calculateTrainingError(){
 		int numberOfMisclassifiedRecords = 0;
 		for(Record record: this.records){
 			double classification = classify(record);
 			double closestValue = findClosestCrypticLabelForClassification(classification);
 			if((closestValue == record.getLabel()) == false){
-					// || Math.abs(closestValue - record.getLabel()) > .00001){
-				/*
-				System.out.println("actual value: " + theClass);
-				System.out.println("closest Value: " + closestValue);
-				System.out.println("records label: " + record.getLabel());
-				System.out.println();
-				*/
 				numberOfMisclassifiedRecords++;
 			}
 		}
@@ -238,24 +234,24 @@ public class NeuralNetworkClassifier {
 		System.out.println("InputToHiddenWeigths:");
 		for(int i = 0; i < this.numberOfInputs; i++){
 			for(int j = 0; j < this.numberOfMiddles; j++){
-				System.out.println("i: " + i + ", j: " + j + ", value: " + this.weightsMiddle[i][j]);
+				System.out.println("i: " + i + ", j: " + j + ", value: " + String.format("%.2f", this.weightsMiddle[i][j]));
 			}
 		}
 	}
 	public void printOutputWeights(){
 		System.out.println("output weights: ");
 		for(int i = 0; i < this.numberOfMiddles; i ++){
-			System.out.println("i: " + i + ", value: " + this.weightsOutput[i]);
+			System.out.println("i: " + i + ", value: " + String.format("%.2f", this.weightsOutput[i]));
 		}
 	}
 	public void printInputToMiddleThetas(){
 		System.out.println("Input to middle thetas:");
 		for(int i = 0; i < this.numberOfMiddles; i ++){
-			System.out.println("i: " + i + ", value: " + this.thetaMiddle[i]);
+			System.out.println("i: " + i + ", value: " + String.format("%.2f", this.thetaMiddle[i]));
 		}
 	}
 	public void printOutputThetas(){
-		System.out.println("output theta: " + this.thetaOutput);
+		System.out.println("output theta: " + String.format("%.2f", this.thetaOutput));
 	}
 
 	public void printRecords(){
