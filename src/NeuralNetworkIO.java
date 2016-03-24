@@ -197,7 +197,6 @@ public class NeuralNetworkIO {
 	
 	private double normalizeContinuousVariableAtColumn(double number, int column){
 		double[] theRange = rangeAtColumn.get(column);
-		//(currentNumber - min) / (max - min)
 		double translation = (number - theRange[0]) / (theRange[1] - theRange[0]);
 		return translation;
 	}

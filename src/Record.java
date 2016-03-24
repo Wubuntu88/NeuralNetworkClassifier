@@ -25,7 +25,7 @@ public class Record {
 			sBuffer.append(String.format("%.2f", dub) + ", ");
 		}
 		sBuffer.replace(sBuffer.length() - 2, sBuffer.length(), " || ");
-		sBuffer.append(this.label);
+		sBuffer.append(String.format("%.2f", this.label));
 		return sBuffer.toString();
 	}
 
