@@ -27,6 +27,10 @@ public class NeuralNetworkIO {
 	//list of attr types: continuous, oridinal, categorical, etc.
 	private ArrayList<String> attributeTypeList = new ArrayList<>();
 	
+	public int attributeTypeListSize(){
+		return attributeTypeList.size();
+	}
+	
 	public NeuralNetworkClassifier instantiateNNClassifierWithTrainingData(
 			String fileName) throws Exception {
 		ArrayList<Record> recordsToReturn = new ArrayList<>();
@@ -100,9 +104,7 @@ public class NeuralNetworkIO {
 				attrs[colIndex] = normalizedNumber;
 			}else{//for non-continous data
 				HashMap<String, Double> symbolToValue = symbolToValueAtColumn.get(colIndex);
-				
 				double value = symbolToValue.get(comps[colIndex]);
-				
 				attrs[colIndex] = value;
 			}
 		}
@@ -117,7 +119,6 @@ public class NeuralNetworkIO {
 		for(String line: lines){
 			String[] comps = line.split(whitespace);
 			Record record = translateLineComponentsIntoRecords(comps);
-			System.out.println("@@" + record);
 			recordsToReturn.add(record);
 		}
 		return recordsToReturn;
@@ -142,16 +143,34 @@ public class NeuralNetworkIO {
 			
 			Double classification = classifications.get(index);
 			Record rec = new Record(record.getAttrList(), classification);
-			System.out.println(rec);
 			String recordDescriptionForHuman = convertRecordToHumanReadableString(rec);
-			//System.out.println(recordDescriptionForHuman);
 			sBuffer.append(recordDescriptionForHuman);
-			//sBuffer.append(String.format("; confidence: %.2f\n", ci.getConfidenceLevel()));
 			index++;
 		}
 		sBuffer.replace(sBuffer.length() - 1, sBuffer.length(), "");
 		pw.write(sBuffer.toString());
 		pw.close();
+	}
+	
+	public String getClosestStringForValueAtColum(int column, double value){
+		if(this.attributeTypeList.get(column).equals(NeuralNetworkIO.CONTINUOUS)){
+			return String.format("%.2f", value);
+		}
+		HashMap<String, Double> hMap = symbolToValueAtColumn.get(column);
+		double minDistance = Double.MAX_VALUE;
+		String closestString = null;
+		if(hMap == null){
+			System.out.println("hmap is null");
+		}
+		for(String labelKey: hMap.keySet()){
+			double valForKey = hMap.get(labelKey);
+			double dist = Math.abs(value - valForKey);
+			if(dist < minDistance){
+				minDistance = dist;
+				closestString = labelKey;
+			}
+		}
+		return closestString;
 	}
 	
 	private String convertRecordToHumanReadableString(Record record){
@@ -162,16 +181,8 @@ public class NeuralNetworkIO {
 			if(this.attributeTypeList.get(index).equals(this.CONTINUOUS)){
 				sBuffer.append(attrList[index] + ", ");
 			}else{
-			HashMap<String, Double> hMap = symbolToValueAtColumn.get(index);
-				for(String key: hMap.keySet()){
-					double valForKey = hMap.get(key);
-					if(valForKey == attrList[index]){
-						sBuffer.append(key + ", ");
-						break;
-					}else{
-						System.out.println("error in printing record; found nothing equal");
-					}
-				}
+				String str = getClosestStringForValueAtColum(index, attrList[index]);
+				sBuffer.append(str + ", ");
 			}
 		}
 		sBuffer.replace(sBuffer.length() - 2, sBuffer.length(), "");
@@ -179,18 +190,7 @@ public class NeuralNetworkIO {
 		//now for the label
 		HashMap<String, Double> hMap = symbolToValueAtColumn.get(attributeTypeList.size() - 1);
 		double minDistance = Double.MAX_VALUE;
-		String closestLabel = null;
-		if(hMap == null){
-			System.out.println("hmap is null");
-		}
-		for(String labelKey: hMap.keySet()){
-			double valForKey = hMap.get(labelKey);
-			double dist = Math.abs(record.getLabel() - valForKey);
-			if(dist < minDistance){
-				minDistance = dist;
-				closestLabel = labelKey;
-			}
-		}
+		String closestLabel = getClosestStringForValueAtColum(attributeTypeList.size() - 1, record.getLabel());
 		sBuffer.append(" || " + closestLabel + "\n");
 		return sBuffer.toString();
 	}
@@ -200,6 +200,20 @@ public class NeuralNetworkIO {
 		//(currentNumber - min) / (max - min)
 		double translation = (number - theRange[0]) / (theRange[1] - theRange[0]);
 		return translation;
+	}
+	
+	public double findValidationErrorRate(ArrayList<Record> validationRecords, ArrayList<Double> valClassifications){
+		//find validation error
+		int numberOfMisclassified = 0;
+		assert validationRecords.size() == valClassifications.size();
+		for(int i = 0; i < validationRecords.size();i++){
+			String s1 = this.getClosestStringForValueAtColum(this.attributeTypeListSize()-1, validationRecords.get(i).getLabel());
+			String s2 = this.getClosestStringForValueAtColum(this.attributeTypeListSize()-1, valClassifications.get(i));
+			if(s1.equals(s2) == false){
+				numberOfMisclassified++;
+			}
+		}
+		return (double)numberOfMisclassified / valClassifications.size();
 	}
 	
 }
