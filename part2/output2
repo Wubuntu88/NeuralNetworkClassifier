@@ -1,0 +1,8 @@
+0.875, 0.9166666666666666, 0.8, female, married || low
+0.25, 0.7666666666666667, 0.2, male, divorced || low
+0.275, 0.9666666666666667, 0.9, female, single || undetermined
+0.1, 0.6, 0.26, male, single || high
+0.55, 0.16666666666666666, 0.7, female, single || low
+0.2, 0.5666666666666667, 0.44, male, married || high
+0.75, -0.08333333333333333, 0.3, female, divorced || low
+0.3, 0.03333333333333333, 0.78, male, divorced || medium
