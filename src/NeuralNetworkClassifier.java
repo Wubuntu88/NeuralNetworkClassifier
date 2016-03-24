@@ -9,6 +9,7 @@ public class NeuralNetworkClassifier {
 	// list of the type of the variables in records (ordinal, continuous, etc)
 	//private ArrayList<String> headerList;
 	private ArrayList<Record> records;
+	private TreeSet<Double> crypticLabels = new TreeSet<>();
 	
 	private int numberOfInputs;
 	private int numberOfMiddles;
@@ -29,7 +30,6 @@ public class NeuralNetworkClassifier {
 	private double[] thetaMiddle;
 	private double thetaOutput;
 	
-	
 	private double[][] weightsMiddle;//[input][hidden]
 	private double[] weightsOutput;//[hidden]
 	
@@ -37,6 +37,12 @@ public class NeuralNetworkClassifier {
 		this.records = records;
 		if(records.size() > 0){
 			this.numberOfInputs = records.get(0).getAttrList().length;
+			for(Record record: this.records){
+				if(crypticLabels.contains(record.getLabel()) == false){
+					crypticLabels.add(record.getLabel());
+				}
+			}
+			System.out.println("number of cryptic labels: " + crypticLabels.size());
 		}else{
 			System.out.println("cannot build a neural net with zero records.");
 		}
@@ -112,6 +118,7 @@ public class NeuralNetworkClassifier {
 		}
 		for(int iteration = 0; iteration < this.trainingIterations; iteration++){
 			for(Record record: this.records){
+				
 				feedForward(record.getAttrList());
 				backPropagate(record.getLabel());
 			}
@@ -144,7 +151,7 @@ public class NeuralNetworkClassifier {
 		}
 		//add theta value to summ
 		outputSum += this.thetaOutput;
-		this.output = 1 / (1 + Math.exp(outputSum));
+		this.output = 1 / (1 + Math.exp(-outputSum));
 	}
 	
 	private void backPropagate(double label) {
@@ -194,12 +201,38 @@ public class NeuralNetworkClassifier {
 		return this.output;
 	}
 	
-	public void letsPrintTheClassifiedRecords(){
+	public double calculateTrainingError(){
+		int numberOfMisclassifiedRecords = 0;
 		for(Record record: this.records){
 			double classification = classify(record);
-			System.out.println(classification);
+			double closestValue = findClosestCrypticLabelForClassification(classification);
+			if((closestValue == record.getLabel()) == false){
+					// || Math.abs(closestValue - record.getLabel()) > .00001){
+				/*
+				System.out.println("actual value: " + theClass);
+				System.out.println("closest Value: " + closestValue);
+				System.out.println("records label: " + record.getLabel());
+				System.out.println();
+				*/
+				numberOfMisclassifiedRecords++;
+			}
 		}
+		return (double)numberOfMisclassifiedRecords / this.records.size();
 	}
+	
+	public double findClosestCrypticLabelForClassification(double classification){
+		double minDistance = Double.MAX_VALUE;
+		double closestValue = -1.0;
+		for(Double value: crypticLabels){
+			double dist = Math.abs(classification - value);
+			if(dist < minDistance){
+				closestValue = value;
+				minDistance = dist;
+			}
+		}
+		return closestValue;
+	}
+	
 	
 	public void printInputToHiddenWeigths(){
 		System.out.println("InputToHiddenWeigths:");
