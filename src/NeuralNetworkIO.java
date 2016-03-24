@@ -1,3 +1,5 @@
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -24,10 +26,11 @@ public class NeuralNetworkIO {
 	
 	//list of attr types: continuous, oridinal, categorical, etc.
 	private ArrayList<String> attributeTypeList = new ArrayList<>();
+	
 	public NeuralNetworkClassifier instantiateNNClassifierWithTrainingData(
 			String fileName) throws Exception {
 		ArrayList<Record> recordsToReturn = new ArrayList<>();
-
+		
 		String whitespace = "[ ]+";
 		List<String> lines = Files.readAllLines(Paths.get(fileName),
 				Charset.defaultCharset());
@@ -75,10 +78,21 @@ public class NeuralNetworkIO {
 		return nnc;
 	}
 	
+	
 	private Record translateLineComponentsIntoRecords(String[] comps){
-		double[] attrs = new double[comps.length - 1];
+		double[] attrs = null;
 		double label = -1;
-		for(int colIndex = 0; colIndex < comps.length - 1; colIndex++){//don't do label in for
+		boolean hasLabelIncluded = comps.length == this.attributeTypeList.size();
+		if(hasLabelIncluded){// if the training or test includes the label
+			attrs = new double[comps.length - 1];
+			HashMap<String, Double> labelToValue = symbolToValueAtColumn.get(comps.length - 1);
+			double value = labelToValue.get(comps[comps.length - 1]);
+			label = value;
+		}else{//comps does not include the label
+			attrs = new double[comps.length];
+		}
+		int lenToIterateTo = hasLabelIncluded ? comps.length - 1 : comps.length;
+		for(int colIndex = 0; colIndex < lenToIterateTo; colIndex++){//don't do label in for
 			String attrType = attributeTypeList.get(colIndex);
 			if(attributeTypeList.get(colIndex).equals(CONTINUOUS)){//for continous columns
 				double number = Double.parseDouble(comps[colIndex]);
@@ -92,12 +106,93 @@ public class NeuralNetworkIO {
 				attrs[colIndex] = value;
 			}
 		}
-		HashMap<String, Double> labelToValue = symbolToValueAtColumn.get(comps.length - 1);
-		double value = labelToValue.get(comps[comps.length - 1]);
-		label = value;
-		
 		Record record = new Record(attrs, label);
 		return record;
+	}
+	
+	public ArrayList<Record> readTestRecordsFromFile(String fileName) throws Exception{
+		ArrayList<Record> recordsToReturn = new ArrayList<>();
+		String whitespace = "[ ]+";
+		List<String> lines = Files.readAllLines(Paths.get(fileName), Charset.defaultCharset());;
+		for(String line: lines){
+			String[] comps = line.split(whitespace);
+			Record record = translateLineComponentsIntoRecords(comps);
+			System.out.println("@@" + record);
+			recordsToReturn.add(record);
+		}
+		return recordsToReturn;
+	}
+	
+	
+	public void writeRecordsToFile(String fileName, 
+			ArrayList<Record> recordsToPrint, ArrayList<Double> classifications){
+		assert recordsToPrint.size() == classifications.size();
+		
+		PrintWriter pw = null;
+		try {
+			pw = new PrintWriter(fileName);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			return;
+		}
+		
+		StringBuffer sBuffer = new StringBuffer("");
+		int index = 0;
+		for(Record record: recordsToPrint){
+			
+			Double classification = classifications.get(index);
+			Record rec = new Record(record.getAttrList(), classification);
+			System.out.println(rec);
+			String recordDescriptionForHuman = convertRecordToHumanReadableString(rec);
+			//System.out.println(recordDescriptionForHuman);
+			sBuffer.append(recordDescriptionForHuman);
+			//sBuffer.append(String.format("; confidence: %.2f\n", ci.getConfidenceLevel()));
+			index++;
+		}
+		sBuffer.replace(sBuffer.length() - 1, sBuffer.length(), "");
+		pw.write(sBuffer.toString());
+		pw.close();
+	}
+	
+	private String convertRecordToHumanReadableString(Record record){
+		StringBuffer sBuffer = new StringBuffer("");
+		int lenOfRecordAttrList = record.getAttrList().length;
+		double[] attrList = record.getAttrList();
+		for(int index = 0; index < lenOfRecordAttrList; index++){
+			if(this.attributeTypeList.get(index).equals(this.CONTINUOUS)){
+				sBuffer.append(attrList[index] + ", ");
+			}else{
+			HashMap<String, Double> hMap = symbolToValueAtColumn.get(index);
+				for(String key: hMap.keySet()){
+					double valForKey = hMap.get(key);
+					if(valForKey == attrList[index]){
+						sBuffer.append(key + ", ");
+						break;
+					}else{
+						System.out.println("error in printing record; found nothing equal");
+					}
+				}
+			}
+		}
+		sBuffer.replace(sBuffer.length() - 2, sBuffer.length(), "");
+		
+		//now for the label
+		HashMap<String, Double> hMap = symbolToValueAtColumn.get(attributeTypeList.size() - 1);
+		double minDistance = Double.MAX_VALUE;
+		String closestLabel = null;
+		if(hMap == null){
+			System.out.println("hmap is null");
+		}
+		for(String labelKey: hMap.keySet()){
+			double valForKey = hMap.get(labelKey);
+			double dist = Math.abs(record.getLabel() - valForKey);
+			if(dist < minDistance){
+				minDistance = dist;
+				closestLabel = labelKey;
+			}
+		}
+		sBuffer.append(" || " + closestLabel + "\n");
+		return sBuffer.toString();
 	}
 	
 	private double normalizeContinuousVariableAtColumn(double number, int column){
